@@ -22,8 +22,8 @@
         constructor() {
           super();
           this.state = {
-            username: '',
-            password: '',
+            username: "",
+            password: "",
           };
           this.onChange = this.onChange.bind(this);
           this.onSubmit = this.onSubmit.bind(this);
@@ -62,43 +62,49 @@
           this.signIn = this.signIn.bind(this);
           this.logout = this.logout.bind(this);
         }
+
         logout() {
-          window.localStorage.removeItem('token');
+          window.localStorage.removeItem("token");
           this.setState({ auth: {} });
         }
+
         async attemptTokenLogin() {
-          const token = window.localStorage.getItem('token');
+          const token = window.localStorage.getItem("token");
           if (token) {
-            const response = await axios.get('/api/auth', {
+            const response = await axios.get("/api/auth", {
               headers: {
                 authorization: token,
               },
             });
-            this.setState({ auth: response.data });
-            console.log('setState auth', this.state.auth);
+            const { data: notes } = await axios.get(
+              `/api/users/${response.data.id}/notes`,
+              {
+                headers: {
+                  authorization: token,
+                },
+              }
+            );
+            this.setState({ auth: response.data, notes: notes });
+            console.log("here is state", this.state);
           }
         }
+
         componentDidMount() {
-          this.attemptTokenLogin();
-          const notes = this.getNotes(this.state.auth.id);
-          this.setState({ notes });
-        }
-        async signIn(credentials) {
-          let response = await axios.post('/api/auth', credentials);
-          const { token } = response.data;
-          window.localStorage.setItem('token', token);
           this.attemptTokenLogin();
         }
 
-        async getNotes(userId) {
-          let { data } = await axios.get(`/api/user/${userId}`);
-          console.log('here are notes in getNotes', data);
-          return data;
+        async signIn(credentials) {
+          let response = await axios.post("/api/auth", credentials);
+          const { token } = response.data;
+          window.localStorage.setItem("token", token);
+          this.attemptTokenLogin();
         }
+
         render() {
-          const { auth, notes } = this.state;
+          const { auth } = this.state;
+          const notes = this.state.notes || [];
           const { signIn, logout, getNotes } = this;
-          console.log('here are notes in render', notes);
+          console.log("notes in the render-->", notes);
 
           if (!auth.id) {
             return <SignIn signIn={signIn} />;
@@ -107,17 +113,15 @@
               <div>
                 Welcome {auth.username}
                 <button onClick={logout}>Logout</button>
-                <ul>
-                  {notes.map((note) => (
-                    <li>{note}</li>
-                  ))}
-                </ul>
+                {notes.map((note) => {
+                  return <p key={note.id}>{note.text}</p>;
+                })}
               </div>
             );
           }
         }
       }
-      ReactDOM.render(<App />, document.querySelector('#root'));
+      ReactDOM.render(<App />, document.querySelector("#root"));
     </script>
   </body>
 </html>
